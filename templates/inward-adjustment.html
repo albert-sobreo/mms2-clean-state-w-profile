@@ -1,0 +1,455 @@
+{% extends "base-template.html" %}
+{% block title %}Inward Inventory Adjustments{% endblock %}
+
+{% block body %}
+
+<div id="app" v-cloak>
+    <!-- NAVIGATION -->
+    <navbar-gas active="nav-purchase" photo="/media/{{request.user.image}}"></navbar-gas>
+    <app-card></app-card>
+    <profile-card first_name="{{request.user.first_name}}" last_name="{{request.user.last_name}}" position="{{request.user.position}}" auth_level="{{request.user.authLevel}}" photo="/media/{{request.user.image}}/"></profile-card>
+
+    <!-- MAIN BODY -->
+    <div class="container">
+        <!-- MORE NAV -->
+        <div class="d-flex font-semibold mb-2 justify-content-center">
+            <div class="justify-content-center c-nav-links gas-nav">
+                <a href="/inward-inventory/" class="mx-2">List</a>
+                <a href="/inward-adjustments/" class="active-gas mx-2">Adjustments</a>
+            </div>
+        </div>
+
+        <!-- TITLE AND BUTTONS -->
+        <div class="d-flex align-items-center mb-3">
+            <span class="font-size-18 font-bold mr-1">Inward Inventory</span>
+        </div>
+
+        <!-- INPUTS -->
+        <div class="row">
+            <div class="col col-3 pr-2">
+                <label for="">Reference No.</label>
+                <select @change="getII(order.code)" v-model="order.code" class="form-control">
+                    <option value="" selected disabled>Select an Inward Inventory</option>
+                    {% for item in ii %}
+                    <option value="{{item.pk}}">{{item.code}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col col-2 pl-2">
+                <label>Date</label>
+                <input v-model="order.date" type="date" class="form-control">
+            </div>
+        </div>
+    </div>
+    <div class="mx-5 row mt-3">
+        <span class="col font-bold">Inward Inventory Items</span>
+    </div>
+    <div class="mx-5 px-5 py-4 b-tr-radius-15 b-tl-radius-15 order-card">
+        <div class="row">
+            <div class="col px-1 gray">
+                <label for="" class="m-0">Barcode</label>
+            </div>
+            <div class="col px-1 gray">
+                <label for="" class="m-0">Name</label>
+            </div>
+            <div class="col px-1 gray">
+                <label for="" class="m-0">Classification</label>
+            </div>
+            <div class="col-1 px-1 gray">
+                <label for="" class="m-0">Type</label>
+            </div>
+            <div class="col-1 px-1 gray">
+                <label for="" class="m-0">Length <span class="gray font-size-10">mm</span></label>
+            </div>
+            <div class="col-1 px-1 gray">
+                <label for="" class="m-0">Width <span class="gray font-size-10">mm</span></label>
+            </div>
+            <div class="col-1 px-1 gray">
+                <label for="" class="m-0">Thick <span class="gray font-size-10">mm</span></label>
+            </div>
+            <div class="col-1 px-1 gray">
+                <label for="" class="m-0">Vol m³</label>
+            </div>
+            <div class="col-1 px-1 gray">
+                <label for="" class="m-0">Qty</label>
+            </div>
+            <div class="col-1 px-1 gray">
+                <label for="" class="m-0">Price per m³</label>
+            </div>
+            <div class="col px-1 gray">
+                <label for="" class="m-0">Total Amount</label>
+            </div>
+            <i class="fas fa-minus-circle stop" style="color:rgba(0,0,0,0)"></i>
+        </div>
+        <div class="order-card-darker container-extend-2 row py-3" v-for="(item, index) in order.items">
+            <div class="col-12 px-5">
+                <div class="row font-semibold">
+                    <div class="col px-1 ">
+                        <span>[[item.code]]</span>
+                    </div>
+                    <div class="col px-1 ">
+                        <span>[[item.name]]</span>
+                    </div>
+                    <div class="col px-1 ">
+                        <span>[[item.classification]]</span>
+                    </div>
+                    <div class="col-1 px-1 ">
+                        <span>[[item.type]]</span>
+                    </div>
+                    <div class="col-1 px-1 ">
+                        <span>[[formatPrice(item.length)]]mm</span>
+                    </div>
+                    <div class="col-1 px-1 ">
+                        <span>[[formatPrice(item.width)]]mm</span>
+                    </div>
+                    <div class="col-1 px-1 ">
+                        <span>[[formatPrice(item.thickness)]]mm</span>
+                    </div>
+                    <div class="col-1 px-1">
+                        <span>[[roundto5(item.vol)]]m³</span>
+                    </div>
+                    <div class="col-1 px-1 ">
+                        <span>[[item.qty]]</span>
+                    </div>
+                    <div class="col-1 px-1 ">
+                        <span>[[roundto2(item.pricePerCubic)]]</span>
+                    </div>
+                    <div class="col px-1 ">
+                        <span>₱[[formatPrice(item.amountTotal)]]</span>
+                    </div>
+                    <i class="fas fa-minus-circle stop" style="color:rgba(0,0,0,0)"></i>
+                </div>
+            </div>
+            <div class="col-12 px-5" v-for="(item1, index1) in item.adjusted">
+                <div class="row">
+                    <div class="col px-1">
+                        <input v-model="item1.code" type="text" class="form-control" placeholder="Barcode">
+                    </div>
+                    <div class="col px-1">
+                        <input v-model="item1.name" type="text" class="form-control" placeholder="Item Name">
+                    </div>
+                    <div class="col px-1">
+                        <input v-model="item1.classification" type="text" class="form-control" placeholder="Item Class">
+                    </div>
+                    <div class="col-1 px-1">
+                        <input v-model="item1.type" type="text" class="form-control" placeholder="Item Type">
+                    </div>
+                    <div class="col-1 px-1">
+                        <input @change="solveVol(index, index1)" v-model="item1.length" type="text" class="form-control" placeholder="Length" onkeypress="validate()">
+                    </div>
+                    <div class="col-1 px-1">
+                        <input @change="solveVol(index, index1)" v-model="item1.width" type="text" class="form-control" placeholder="Width" onkeypress="validate()">
+                    </div>
+                    <div class="col-1 px-1">
+                        <input @change="solveVol(index, index1)" v-model="item1.thickness" type="text" class="form-control" placeholder="Thickness" onkeypress="validate()">
+                    </div>
+                    <div class="col-1 px-1">
+                        <input @change="solveAmountTotal(index, index1)" v-model="item1.vol" type="text" class="form-control" placeholder="Vol" onkeypress="validate()">
+                    </div>
+                    <div class="col-1 px-1">
+                        <input @change="solveAmountTotal(index, index1)" v-model="item1.qty" type="text" class="form-control" placeholder="Qty" onkeypress="validate()">
+                    </div>
+                    <div class="col px-1">
+                        <input @change="solveAmountTotal(index, index1)" v-model="item1.pricePerCubic" type="text" class="form-control" placeholder="Price per m³" onkeypress="validate()">
+                    </div>
+                    <div class="col px-1">
+                        <input :value="formatPrice(item1.amountTotal)" type="text" class="form-control" placeholder="Total Amount" onkeypress="validate()" readonly>
+                    </div>
+                    <i @click="removeAdjustments(index, index1)" class="fas fa-minus-circle stop text-shadow-small" style="line-height: 30px;"></i>
+                </div>
+            </div>
+            <div class="col-12 px-5">
+                <div class="row">
+                    <div class="col px-1 my-2">
+                        <button @click="addAdjustments(index)" class="btn btn-warning">+ Add Adjustments</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-4">
+            <div class="col-2 offset-10">
+                <label class="font-size-14">Total Amount Due</label>
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">₱</span>
+                    </div>
+                    <input v-model="order.amountTotal" type="text" class="form-control box-shadow-off" placeholder="Total Amount" onkeypress="validate()" readonly>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div @click="checkForm(order.code)" class="mx-5 border container-extend btn-bottom">
+        REQUEST FOR APPROVAL
+    </div>
+    <pre>[[$data]]</pre>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+    var app = new Vue({
+        delimiters: ['[[', ']]'],
+        el: "#app",
+
+        data: {
+            config:{
+                headers: {
+                    "X-CSRFToken": getCookie('csrftoken')
+                }
+            },
+            order: {
+                code: '',
+                date: new Date().toISOString().split('T')[0],
+                amountTotal: null,
+                items: [{
+                    code: null,
+                    length: null,
+                    width: null,
+                    thickness: null,
+                    vol: null,
+                    qty: null,
+                    amountTotal: null,
+                    adjusted: [{
+                        code: null,
+                        name: null,
+                        classification: null,
+                        type: null,
+                        length: null,
+                        width: null,
+                        thickness: null,
+                        vol: null,
+                        qty: null,
+                        pricePerCubic: null,
+                        amount: null,
+                        amountTotal: null,
+                    }]
+                }]
+            },
+            errors: []
+        },
+        computed:{
+            amountTotal(){
+                var x = this.order.items.map(item=>item.adjusted)
+                return x.map(item2=>item2.map(item=>item.amountTotal))
+                //return y.map(item=>item.amountTotal)
+            }
+        },
+
+        watch: {
+            amountTotal(){
+                console.log(this.amountTotal)
+                this.order.amountTotal = this.amountTotal.reduce((a,b)=>Number(a)+Number(b.reduce((x,y)=>Number(x)+Number(y)), 0),0)
+            }
+        },
+
+        methods: {
+            solveVol(index, index1){
+                var l = Number(this.order.items[index].adjusted[index1].length)/1000
+                var w = Number(this.order.items[index].adjusted[index1].width)/1000
+                var t = Number(this.order.items[index].adjusted[index1].thickness)/1000
+                this.order.items[index].adjusted[index1].vol = l*w*t
+            },
+
+            solveAmountTotal(index, index1){
+                var qty = this.order.items[index].adjusted[index1].qty
+                var pricePerCubic= this.order.items[index].adjusted[index1].pricePerCubic
+                var vol = this.order.items[index].adjusted[index1].vol
+
+                this.order.items[index].adjusted[index1].amountTotal = (qty*vol).toFixed(4)*pricePerCubic
+            },
+            roundto5(number){
+                return Number(number).toFixed(5)
+            },
+            roundto2(number){
+                return Number(number).toFixed(2)
+            },
+            addAdjustments(index){
+                this.order.items[index].adjusted.push({
+                    code: this.order.items[index].code,
+                    name: null,
+                    classification: null,
+                    type: null,
+                    length: this.order.items[index].length,
+                    width: this.order.items[index].width,
+                    thickness: this.order.items[index].thickness,
+                    vol: this.order.items[index].vol,
+                    qty: null,
+                    pricePerCubic: this.order.items[index].pricePerCubic,
+                    amount: this.order.items[index].amount,
+                    amountTotal: this.order.items[index].amountTotal,
+                })
+            },
+            removeAdjustments(index, index1){
+                this.$delete(this.order.items[index].adjusted, index1)
+            },
+
+            submit(id){
+                axios.post(`/save-inward-inventory/${id}/`, this.order, this.config)
+                .then(res=>res.data==0?location.reload():'')
+                console.log(id)
+            },
+
+            checkForm(id){
+                this.submit(id)
+            },
+            //checkForm2(id){
+            //    success = []
+            //    loop = 0
+            //    for(var item of this.order.items){
+            //        for(var item1 of item.adjusted){
+            //            if(
+            //                item1.code &&
+            //                item1.name &&
+            //                item1.classification &&
+            //                item1.type &&
+            //                item1.length &&
+            //                item1.width &&
+            //                item1.thickness &&
+            //                item1.vol &&
+            //                item1.qty &&
+            //                item1.amount &&
+            //                item1.amountTotal
+            //            ){
+            //                success.push(1)
+            //            } else {
+            //                success.push(0)
+            //                break
+            //            }
+            //        }
+//
+            //        if(success.includes(0)){
+            //            break  
+            //        }
+            //        loop++
+            //    }
+//
+            //    if(!success.includes(0)){
+            //        this.submit(id)
+            //        return
+            //    }
+//
+            //    this.errors = []
+            //    this.order.items.forEach((item,index)=>{
+            //        item.adjusted.forEach((item1,index1)=>{
+            //            if(!item1.code){
+            //                this.errors.push('Barcode Required at index: ' + String(index+1) + "-" + String(index1+1))
+            //            }
+            //            if(!item1.name){
+            //                this.errors.push('Name Required at index: ' + String(index+1) + "-" + String(index1+1))
+            //            }
+            //            if(!item1.classification){
+            //                this.errors.push('Classification Required at index: ' + String(index+1) + "-" + String(index1+1))
+            //            }
+            //            if(!item1.type){
+            //                this.errors.push('Type Required at index: ' + String(index+1) + "-" + String(index1+1))
+            //            }
+            //            if(!item1.length){
+            //                this.errors.push('Length Required at index: ' + String(index+1) + "-" + String(index1+1))
+            //            }
+            //            if(!item1.width){
+            //                this.errors.push('Width Required at index: ' + String(index+1) + "-" + String(index1+1))
+            //            }
+            //            if(!item1.thickness){
+            //                this.errors.push('Thickness Required at index: ' + String(index+1) + "-" + String(index1+1))
+            //            }
+            //            if(!item1.vol){
+            //                this.errors.push('Vol Required at index: ' + String(index+1) + "-" + String(index1+1))
+            //            }
+            //            if(!item1.qty){
+            //                this.errors.push('Qty Required at index: ' + String(index+1) + "-" + String(index1+1))
+            //            }
+            //            if(!item1.amount){
+            //                this.errors.push('Amount Required at index: ' + String(index+1) + "-" + String(index1+1))
+            //            }
+            //            if(!item1.amountTotal){
+            //                this.errors.push('Amount Total Required at index: ' + String(index+1) + "-" + String(index1+1))
+            //            }
+            //        })
+            //    })
+//
+            //    Swal.fire({
+            //        title: "Unfilled Inputs",
+            //        html: this.errors.join('<br>'),
+            //        icon: 'warning'
+            //    })
+            //},
+            
+            formatPrice(val){
+                val = Number(val).toFixed(2)
+                var num = val.replace(/,/gi, "");
+                var num1 = num.split('.')
+                var num2 = num1[0].split(/(?=(?:\d{3})+$)/).join(",");
+                val = (num1[1] === undefined ? num2 : num2 + "." + num1[1])
+                return val
+            },
+            getII(id){
+                axios.get(`/api/inward-inventory/${id}`)
+                .then(res=>{
+                    var iiitemsmerch = res.data.iiitemsmerch
+                    
+                    iiitemsmerch.forEach((item,index)=>{
+                        if(index==0){
+                            this.order.items[index].id = item.id
+                            this.order.items[index].code = item.code
+                            this.order.items[index].name = item.name
+                            this.order.items[index].classification = item.classification
+                            this.order.items[index].type = item.type
+                            this.order.items[index].length = item.length
+                            this.order.items[index].width = item.width
+                            this.order.items[index].thickness = item.thicc
+                            this.order.items[index].vol = (Number(item.length/1000) * Number(item.width/1000) * Number(item.thicc/1000))
+                            this.order.items[index].qty = item.qty
+                            this.order.items[index].pricePerCubic = item.pricePerCubic
+                            this.order.items[index].amountTotal = item.totalCost
+                            this.order.items[index].adjusted = [{
+                                code: item.code,
+                                name: item.name,
+                                classification: item.classification,
+                                type: item.type,
+                                length: item.length,
+                                width: item.width,
+                                thickness: item.thicc,
+                                vol: Number(item.length/1000) * Number(item.width/1000) * Number(item.thicc/1000),
+                                qty: item.qty,
+                                pricePerCubic: item.pricePerCubic,
+                                amountTotal: item.totalCost,
+                            }]
+                        } else {
+                            this.order.items.push({
+                                id: item.id,
+                                code: item.code,
+                                name: item.name,
+                                classification: item.classification,
+                                type: item.type,
+                                length: item.length,
+                                width: item.width,
+                                thickness: item.thicc,
+                                vol: Number(item.length/1000) * Number(item.width/1000) * Number(item.thicc/1000),
+                                qty: item.qty,
+                                pricePerCubic: item.pricePerCubic,
+                                amountTotal: item.totalCost,
+                                adjusted: [{
+                                    code: item.code,
+                                    name: item.name,
+                                    classification: item.classification,
+                                    type: item.type,
+                                    length: item.length,
+                                    width: item.width,
+                                    thickness: item.thicc,
+                                    vol: Number(item.length/1000) * Number(item.width/1000) * Number(item.thicc/1000),
+                                    qty: item.qty,
+                                    pricePerCubic: item.pricePerCubic,
+                                    amountTotal: item.totalCost,
+                                }]
+                            })
+                        }
+                    })
+                })
+            }
+        }
+    })
+</script>
+
+{% endblock %}
